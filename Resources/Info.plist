@@ -5,7 +5,7 @@
     <key>CFBundleExecutable</key>
     <string>Drawzee</string>
     <key>CFBundleIdentifier</key>
-    <string>io.monade.drawzee</string>
+    <string>io.mcdev.drawzee</string>
     <key>CFBundleName</key>
     <string>Drawzee</string>
     <key>CFBundleDisplayName</key>

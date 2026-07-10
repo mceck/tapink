@@ -24,6 +24,8 @@ public final class AppSettings {
         static let shortcuts = "shortcutBindingsOverride"
         static let brushColor = "brushColorComponents"
         static let brushLineWidth = "brushLineWidth"
+        static let autofadeDelay = "autofadeDelaySeconds"
+        static let startWithSidebarHidden = "startDrawModeWithSidebarHidden"
     }
 
     /// Called whenever `hideFromDockAndSwitcher` changes, so the app delegate can
@@ -82,6 +84,26 @@ public final class AppSettings {
                 forKey: Keys.brushColor
             )
         }
+    }
+
+    /// How long a drawing stays on screen after commit before its auto-fade
+    /// erase animation starts. Read at commit time, so changing it never
+    /// retroactively reschedules objects already waiting to fade.
+    public var autofadeDelaySeconds: TimeInterval {
+        get {
+            let stored = defaults.double(forKey: Keys.autofadeDelay)
+            return stored > 0 ? stored : 1
+        }
+        set { defaults.set(newValue, forKey: Keys.autofadeDelay) }
+    }
+
+    /// Whether a fresh draw-mode session starts with the toolbar already fully
+    /// hidden (see `DrawSessionCoordinator.toggleSidebarHidden()`). Defaults to
+    /// off, since a new session with no visible toolbar at all would leave a
+    /// first-time user with no obvious way to reach any tool.
+    public var startDrawModeWithSidebarHidden: Bool {
+        get { defaults.bool(forKey: Keys.startWithSidebarHidden) }
+        set { defaults.set(newValue, forKey: Keys.startWithSidebarHidden) }
     }
 
     public var brushLineWidth: CGFloat {

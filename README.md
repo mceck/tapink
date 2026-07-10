@@ -138,6 +138,8 @@ Open, via the menu bar icon → **Settings…**:
 
 * **Selected-area screenshots go to**
 
+* **Start draw mode with sidebar hidden**
+
 * **Shortcuts**
 
 ### Default shortcuts
@@ -149,12 +151,22 @@ Action | Default |
 | Copy Screenshot | ⌘C |
 | Save Screenshot | ⌘S |
 | Selected-Area Screenshot | ⌘⇧A |
+| Freeze Background | L |
 | Clear Canvas | Delete |
 | Undo | ⌘Z |
 | Redo | ⌘⇧Z |
 | Pen Tool | P |
 | Highlighter Tool | H |
-Shape Tool | S |
+| Shape Tool | S |
+| Rectangle Shape | 1 |
+| Ellipse Shape | 2 |
+| Line Shape | 3 |
+| Arrow Shape | 4 |
 | Spotlight Tool | F |
 | Text Tool | T |
+| Move Tool | V |
+| Eraser Tool | D |
 | Hide Canvas | E |
+| Toggle Sidebar | ⌥W |
+| Hide Sidebar | ⌘W |
+| Auto-Fade Drawings | Space |

@@ -36,9 +36,13 @@ final class CanvasViewGeometryTests: XCTestCase {
         XCTAssertEqual(a.y, b.y, accuracy: accuracy, file: file, line: line)
     }
 
-    func testPathHasFiveElementsShaftPlusTwoBarbs() {
+    func testPathHasSixElementsShaftPlusTwoIndependentBarbs() {
+        // Shaft (move+line) and each barb (move+line) are three independent
+        // subpaths — not five elements with the shaft bleeding into the first
+        // barb — so no join is ever computed at the tip; see the comment on
+        // the `path.move(to: end)` calls in `arrowPath`.
         let path = CanvasView.arrowPath(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 100, y: 0))
-        XCTAssertEqual(path.elementCount, 5)
+        XCTAssertEqual(path.elementCount, 6)
     }
 
     func testShaftGoesDirectlyFromStartToEnd() {
@@ -57,8 +61,13 @@ final class CanvasViewGeometryTests: XCTestCase {
         let end = CGPoint(x: 100, y: 40)
         let elements = elements(of: CanvasView.arrowPath(from: start, to: end))
 
-        XCTAssertEqual(elements[3].type, .moveTo)
-        assertPoint(elements[3].point, end, accuracy: 0.5)
+        // Each barb is its own subpath, independently moved-to from the tip —
+        // not a continuation of the shaft's last point — so both `moveTo`s
+        // (index 2 for the first barb, index 4 for the second) land at `end`.
+        XCTAssertEqual(elements[2].type, .moveTo)
+        assertPoint(elements[2].point, end, accuracy: 0.5)
+        XCTAssertEqual(elements[4].type, .moveTo)
+        assertPoint(elements[4].point, end, accuracy: 0.5)
     }
 
     /// For a variety of shaft directions, both barbs must be exactly `arrowLength` from
@@ -74,8 +83,8 @@ final class CanvasViewGeometryTests: XCTestCase {
 
         for (start, end) in cases {
             let elements = elements(of: CanvasView.arrowPath(from: start, to: end))
-            let p1 = elements[2].point
-            let p2 = elements[4].point
+            let p1 = elements[3].point
+            let p2 = elements[5].point
 
             let shaftAngle = atan2(end.y - start.y, end.x - start.x)
             let backAlongShaft = shaftAngle + .pi
@@ -98,11 +107,56 @@ final class CanvasViewGeometryTests: XCTestCase {
     func testDegenerateZeroLengthArrowProducesFiniteGeometry() {
         let point = CGPoint(x: 42, y: 42)
         let elements = elements(of: CanvasView.arrowPath(from: point, to: point))
-        XCTAssertEqual(elements.count, 5)
+        XCTAssertEqual(elements.count, 6)
         for element in elements {
             XCTAssertTrue(element.point.x.isFinite, "arrow geometry produced a non-finite x for a zero-length shaft")
             XCTAssertTrue(element.point.y.isFinite, "arrow geometry produced a non-finite y for a zero-length shaft")
         }
+    }
+
+    // MARK: - isHit(at:) (move & eraser tools)
+
+    func testStrokeHitsOnThePathAndMissesFarAway() {
+        let stroke = DrawingObject.stroke(StrokeObject(
+            screen: 1, points: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0)],
+            color: .red, width: 4, isHighlighter: false
+        ))
+        XCTAssertTrue(stroke.isHit(at: CGPoint(x: 50, y: 0)))
+        XCTAssertTrue(stroke.isHit(at: CGPoint(x: 50, y: 8)), "click within tolerance of a thin stroke should hit")
+        XCTAssertFalse(stroke.isHit(at: CGPoint(x: 50, y: 40)))
+    }
+
+    func testHighlighterHitAreaTracksItsTripledDrawnWidth() {
+        let highlighter = DrawingObject.stroke(StrokeObject(
+            screen: 1, points: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0)],
+            color: .red, width: 10, isHighlighter: true
+        ))
+        // Drawn width is 30 (10 * 3), so 15 + 8 tolerance from the centerline still hits.
+        XCTAssertTrue(highlighter.isHit(at: CGPoint(x: 50, y: 20)))
+        XCTAssertFalse(highlighter.isHit(at: CGPoint(x: 50, y: 30)))
+    }
+
+    func testRectangleHitsOnTheOutlineButNotInTheHollowInterior() {
+        let rect = DrawingObject.shape(ShapeObject(
+            screen: 1, kind: .rectangle, startPoint: CGPoint(x: 0, y: 0),
+            endPoint: CGPoint(x: 100, y: 100), color: .red, width: 4
+        ))
+        XCTAssertTrue(rect.isHit(at: CGPoint(x: 50, y: 0)), "bottom edge should hit")
+        XCTAssertTrue(rect.isHit(at: CGPoint(x: 100, y: 50)), "right edge should hit")
+        XCTAssertFalse(
+            rect.isHit(at: CGPoint(x: 50, y: 50)),
+            "a hollow rectangle's center must not hit, or it would block grabbing objects drawn inside it"
+        )
+    }
+
+    func testTextHitsInsideItsBoundingBoxAndMissesOutside() {
+        let text = DrawingObject.text(TextObject(
+            screen: 1, origin: CGPoint(x: 100, y: 100), string: "hello", color: .red, fontSize: 24
+        ))
+        // origin is the bottom-left of the glyph box in a non-flipped canvas.
+        XCTAssertTrue(text.isHit(at: CGPoint(x: 110, y: 110)))
+        XCTAssertFalse(text.isHit(at: CGPoint(x: 100, y: 200)))
+        XCTAssertFalse(text.isHit(at: CGPoint(x: 50, y: 110)), "left of the box must miss")
     }
 
     // MARK: - constrainedShapePoint (Shift-to-square/circle)

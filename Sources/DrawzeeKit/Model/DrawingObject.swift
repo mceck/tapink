@@ -75,4 +75,22 @@ public enum DrawingObject: Identifiable {
         case .text(let object): return object.screen
         }
     }
+
+    /// A copy shifted by `delta`, preserving identity (`id` is a stored
+    /// property, so struct copies keep it) — the move tool relies on that to
+    /// keep dragging the same object across successive updates.
+    public func translated(by delta: CGPoint) -> DrawingObject {
+        switch self {
+        case .stroke(var object):
+            object.points = object.points.map { CGPoint(x: $0.x + delta.x, y: $0.y + delta.y) }
+            return .stroke(object)
+        case .shape(var object):
+            object.startPoint = CGPoint(x: object.startPoint.x + delta.x, y: object.startPoint.y + delta.y)
+            object.endPoint = CGPoint(x: object.endPoint.x + delta.x, y: object.endPoint.y + delta.y)
+            return .shape(object)
+        case .text(var object):
+            object.origin = CGPoint(x: object.origin.x + delta.x, y: object.origin.y + delta.y)
+            return .text(object)
+        }
+    }
 }

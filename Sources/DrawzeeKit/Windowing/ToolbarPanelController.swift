@@ -16,13 +16,14 @@ public final class ToolbarPanelController: NSObject {
     /// Full height showing every tool/action button; tuned by hand to match
     /// `ToolbarView`'s expanded content exactly (no dead draggable space below it).
     private let expandedHeight: CGFloat = 620
-    /// Collapsed height showing just the color swatch and the collapse toggle; same
-    /// tuning approach as `expandedHeight`, sized for a 26pt swatch and a 36pt button.
-    private let collapsedHeight: CGFloat = 114
+    /// Collapsed height showing the color swatch, the selected-tool indicator, and the
+    /// collapse toggle; same tuning approach as `expandedHeight`, sized for a 24pt swatch
+    /// and two 32pt buttons.
+    private let collapsedHeight: CGFloat = 144
 
     public override init() {
         let panel = KeyablePanel(
-            contentRect: NSRect(x: 0, y: 0, width: 68, height: 620),
+            contentRect: NSRect(x: 0, y: 0, width: 64, height: 620),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -38,7 +39,12 @@ public final class ToolbarPanelController: NSObject {
         super.init()
     }
 
-    public func show(on screen: NSScreen?) {
+    /// `revealed: false` (for `DrawSessionCoordinator.enableDrawMode()` when the
+    /// user has set the "start with sidebar hidden" preference) still creates the
+    /// hosting view and positions the panel, just skips ever ordering it front —
+    /// ordering it front and then immediately back out via `setFullyHidden(true)`
+    /// visibly flashed the toolbar on screen for a frame before this existed.
+    public func show(on screen: NSScreen?, revealed: Bool = true) {
         guard let coordinator else { return }
         if hostingView == nil {
             let hosting = NSHostingView(rootView: ToolbarView(coordinator: coordinator))
@@ -49,6 +55,7 @@ public final class ToolbarPanelController: NSObject {
             let origin = CGPoint(x: screen.frame.minX + 28, y: screen.frame.midY - panel.frame.height / 2)
             panel.setFrameOrigin(origin)
         }
+        guard revealed else { return }
         panel.makeKeyAndOrderFront(nil)
     }
 
@@ -56,18 +63,41 @@ public final class ToolbarPanelController: NSObject {
         panel.orderOut(nil)
     }
 
+    /// Toggled by `DrawSessionCoordinator.toggleSidebarHidden()` — unlike `hide()`
+    /// (only used when draw mode itself is exiting) or `show(on:)` (only used once
+    /// per session, to reset the toolbar to a predictable spot), this is invoked
+    /// repeatedly mid-session and must never touch the panel's size or position, so
+    /// it reappears exactly where the user left it (possibly dragged elsewhere).
+    public func setFullyHidden(_ hidden: Bool) {
+        if hidden {
+            hide()
+        } else {
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+
     /// Resizes the panel keeping its top edge fixed, so collapsing/expanding only
     /// grows or shrinks it downward instead of shifting the whole toolbar (and the
     /// color swatch anchored at its top) up or down on screen. Uses an explicit,
     /// short duration (rather than the legacy `animate: true` heuristic) so callers
     /// can rely on it finishing before `DrawSessionCoordinator`'s content-fade delay.
-    public func setCollapsed(_ collapsed: Bool) {
+    ///
+    /// `animated: false` is for `DrawSessionCoordinator.enableDrawMode()`: draw mode
+    /// always starts expanded regardless of how a *previous* session was left, and
+    /// that reset must land before the panel is ever ordered on screen — animating it
+    /// there would show the panel popping in mid-resize instead of already at its
+    /// final size and position.
+    public func setCollapsed(_ collapsed: Bool, animated: Bool = true) {
         let newHeight = collapsed ? collapsedHeight : expandedHeight
         var frame = panel.frame
         guard frame.height != newHeight else { return }
         let top = frame.maxY
         frame.size.height = newHeight
         frame.origin.y = top - newHeight
+        guard animated else {
+            panel.setFrame(frame, display: true)
+            return
+        }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.18
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)

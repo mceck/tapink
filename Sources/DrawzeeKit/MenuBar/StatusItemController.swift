@@ -18,13 +18,38 @@ public final class StatusItemController: NSObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] active in self?.updateToggleTitle(active: active) }
             .store(in: &cancellables)
+
+        coordinator.$isDrawModeActive
+            .combineLatest(coordinator.$toolState.map(\.color).removeDuplicates())
+            .receive(on: RunLoop.main)
+            .sink { [weak self] active, color in self?.updateIcon(active: active, color: color) }
+            .store(in: &cancellables)
     }
 
+    // `configureButton` sets the initial template image synchronously so the
+    // status item never appears empty at launch; the Combine subscription above
+    // (which delivers on the next run-loop pass) owns every update after that.
     private func configureButton() {
         guard let button = statusItem.button else { return }
         let image = NSImage(systemSymbolName: "scribble.variable", accessibilityDescription: "Drawzee")
         image?.isTemplate = true
         button.image = image
+    }
+
+    private func updateIcon(active: Bool, color: NSColor) {
+        guard let button = statusItem.button else { return }
+        let image = NSImage(systemSymbolName: "scribble.variable", accessibilityDescription: "Drawzee")
+        if active {
+            // While drawing, tint the icon with the current tool color. The
+            // image must stop being a template, or the system re-renders it
+            // monochrome and the palette color never shows.
+            let tinted = image?.withSymbolConfiguration(NSImage.SymbolConfiguration(paletteColors: [color]))
+            tinted?.isTemplate = false
+            button.image = tinted
+        } else {
+            image?.isTemplate = true
+            button.image = image
+        }
     }
 
     private func buildMenu() {

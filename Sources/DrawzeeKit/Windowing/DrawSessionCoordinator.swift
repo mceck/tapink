@@ -13,12 +13,15 @@ public final class DrawSessionCoordinator: ObservableObject {
     @Published public private(set) var isDrawModeActive = false
     @Published public private(set) var isCanvasHidden = false
     @Published public private(set) var isSidebarCollapsed = false
+    @Published public private(set) var isSidebarHidden = false
     @Published public var toolState = ToolState()
     @Published public private(set) var isSelectingRegion = false
     @Published public private(set) var isBackgroundFrozen = false
+    @Published public private(set) var isAutofadeEnabled = false
     public private(set) var isEditingText = false
 
     public let document = DrawingDocument()
+    private lazy var autofade = AutofadeController(document: document)
 
     private var overlayControllers: [OverlayWindowController] = []
     private let toolbarController = ToolbarPanelController()
@@ -30,7 +33,15 @@ public final class DrawSessionCoordinator: ObservableObject {
         toolbarController.coordinator = self
         toolState.color = AppSettings.shared.brushColor
         toolState.lineWidth = AppSettings.shared.brushLineWidth
-        document.onChange = { [weak self] in self?.redrawAllCanvases() }
+        document.onChange = { [weak self] in
+            guard let self else { return }
+            // Undo/clear must also drop any scheduled fade for the removed
+            // objects, or a stale timer would erase them again after a redo.
+            self.autofade.pruneRemovedObjects(keeping: Set(self.document.objects.map(\.id)))
+            self.redrawAllCanvases()
+        }
+        document.onAdd = { [weak self] object in self?.autofade.scheduleFade(for: object) }
+        autofade.onNeedsRedraw = { [weak self] in self?.redrawAllCanvases() }
         rebuildOverlayWindows()
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -83,12 +94,28 @@ public final class DrawSessionCoordinator: ObservableObject {
         previouslyActiveApp = NSWorkspace.shared.frontmostApplication
         isDrawModeActive = true
         isCanvasHidden = false
-        isSidebarCollapsed = false
-        toolbarController.setCollapsed(false)
+        // A previous session may have left the sidebar collapsed; every fresh
+        // session starts expanded regardless. That reset must be instantaneous —
+        // no SwiftUI content fade, no panel-resize animation — since it happens
+        // before the panel/toolbar is shown at all. `.animation(value:)` in
+        // `ToolbarView` would otherwise animate this mutation too, so it's
+        // explicitly wrapped in a disabled-animation transaction; only the
+        // user-driven `toggleSidebarCollapsed()` below should ever animate.
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            isSidebarCollapsed = false
+        }
+        toolbarController.setCollapsed(false, animated: false)
+        isSidebarHidden = AppSettings.shared.startDrawModeWithSidebarHidden
         // Every fresh draw-mode session starts from a known, predictable tool
         // rather than whatever was left selected last time (e.g. spotlight).
         toolState.selectedTool = .pen
         toolBeforeSpotlight = nil
+        // Same predictable-start philosophy as the tool reset above: auto-fade
+        // is opt-in per session.
+        isAutofadeEnabled = false
+        autofade.setEnabled(false)
         unfreezeBackground()
         overlayControllers.forEach { $0.showForDrawing() }
         // The modern cooperative `NSApp.activate()` (macOS 14+) explicitly does
@@ -97,13 +124,20 @@ public final class DrawSessionCoordinator: ObservableObject {
         // API reliably steals keyboard focus, which is exactly what's needed
         // here for shortcuts/text-entry to actually reach Drawzee.
         NSApp.activate(ignoringOtherApps: true)
-        toolbarController.show(on: DrawSessionCoordinator.screenUnderCursor() ?? NSScreen.main)
+        toolbarController.show(on: DrawSessionCoordinator.screenUnderCursor() ?? NSScreen.main, revealed: !isSidebarHidden)
         NSLog("Drawzee: enableDrawMode done, appActive=\(NSApp.isActive)")
     }
 
     public func disableDrawMode() {
         guard isDrawModeActive else { return }
         isDrawModeActive = false
+        // Anything still waiting to fade (or mid-erase) was already promised to
+        // disappear; finish the erase now rather than resurrecting it whole the
+        // next time draw mode opens. Must run before `setEnabled(false)`, which
+        // instead *cancels* outstanding fades.
+        autofade.finishImmediately()
+        autofade.setEnabled(false)
+        isAutofadeEnabled = false
         unfreezeBackground()
         overlayControllers.forEach { $0.hide() }
         toolbarController.hide()
@@ -145,6 +179,14 @@ public final class DrawSessionCoordinator: ObservableObject {
         }
     }
 
+    /// Fully hides/reveals the toolbar panel, distinct from `toggleSidebarCollapsed()`:
+    /// collapsing still leaves a small indicator on screen, this removes the panel
+    /// entirely (no resize/fade animation to sequence, so it's a direct toggle).
+    public func toggleSidebarHidden() {
+        isSidebarHidden.toggle()
+        toolbarController.setFullyHidden(isSidebarHidden)
+    }
+
     // MARK: - Tool selection
 
     /// Spotlight is the one tool with an "off" state: re-selecting it while
@@ -175,6 +217,28 @@ public final class DrawSessionCoordinator: ObservableObject {
     public func setShape(_ shape: ShapeKind) {
         toolState.selectedShape = shape
         toolState.selectedTool = .shape
+    }
+
+    // MARK: - Auto-fade
+
+    /// Applies to objects committed from now on (a stroke already in progress
+    /// counts: its fade clock starts at mouse-up, which lands after this).
+    /// Turning it on also wipes whatever is already drawn: the mode means
+    /// "nothing sticks around", so pre-existing permanent drawings would
+    /// otherwise linger forever next to the self-erasing new ones.
+    /// Toggling off leaves everything currently on screen permanent.
+    public func toggleAutofade() {
+        isAutofadeEnabled.toggle()
+        if isAutofadeEnabled {
+            document.clear()
+        }
+        autofade.setEnabled(isAutofadeEnabled)
+    }
+
+    /// Render-time query for canvases: erase progress in 0...1 for an object
+    /// mid-fade, nil for one that should draw fully visible.
+    func fadeProgress(for objectID: UUID) -> CGFloat? {
+        autofade.progress(for: objectID)
     }
 
     // MARK: - Text editing handoff

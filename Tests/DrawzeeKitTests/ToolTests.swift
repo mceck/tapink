@@ -50,6 +50,8 @@ final class ToolTests: XCTestCase {
         XCTAssertEqual(DrawingTool.shape.rawValue, "shape")
         XCTAssertEqual(DrawingTool.spotlight.rawValue, "spotlight")
         XCTAssertEqual(DrawingTool.text.rawValue, "text")
+        XCTAssertEqual(DrawingTool.move.rawValue, "move")
+        XCTAssertEqual(DrawingTool.eraser.rawValue, "eraser")
     }
 
     // MARK: - ToolState

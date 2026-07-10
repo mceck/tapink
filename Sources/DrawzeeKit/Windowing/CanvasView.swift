@@ -10,11 +10,23 @@ public final class CanvasView: NSView {
     var onTextEditingBegin: (() -> Void)?
     var onTextEditingEnd: (() -> Void)?
     var onRegionSelected: ((CGRect) -> Void)?
+    /// Erase progress (0...1) for an object currently auto-fading, nil for one
+    /// that should render fully visible. Queried during `draw` so the animation
+    /// stays inside the normal vector-replay pipeline instead of growing a
+    /// second rendering path.
+    var fadeProgressProvider: ((UUID) -> CGFloat?)?
 
     private var currentStrokePoints: [CGPoint] = []
     private var shapeStart: CGPoint?
     private var shapeCurrent: CGPoint?
     private var isDrawingInProgress = false
+
+    /// Move-tool drag state: the object grabbed at mouse-down and the last
+    /// drag location, so each `mouseDragged` applies only the incremental
+    /// delta (the document mutates in place; re-deriving from the original
+    /// mouse-down point would double-apply movement).
+    private var movingObjectID: UUID?
+    private var lastMovePoint: CGPoint = .zero
 
     private var spotlightLayer: CAShapeLayer?
     private var activeTextView: CommittingTextView?
@@ -127,6 +139,13 @@ public final class CanvasView: NSView {
             break
         case .text:
             beginTextEditing(at: point)
+        case .move:
+            movingObjectID = topmostObject(at: point)?.id
+            lastMovePoint = point
+        case .eraser:
+            if let hit = topmostObject(at: point) {
+                document?.remove(id: hit.id)
+            }
         }
     }
 
@@ -154,6 +173,16 @@ public final class CanvasView: NSView {
                 shiftHeld: event.modifierFlags.contains(.shift)
             )
             needsDisplay = true
+        case .move:
+            guard let id = movingObjectID else { return }
+            document?.translate(id: id, by: CGPoint(x: point.x - lastMovePoint.x, y: point.y - lastMovePoint.y))
+            lastMovePoint = point
+        case .eraser:
+            // Keeping the eraser live during a drag turns "click each stroke"
+            // into the natural "swipe across everything to erase" gesture.
+            if let hit = topmostObject(at: point) {
+                document?.remove(id: hit.id)
+            }
         default:
             break
         }
@@ -172,6 +201,7 @@ public final class CanvasView: NSView {
             onRegionSelected?(rect)
             return
         }
+        movingObjectID = nil
         guard isDrawingInProgress else { return }
         isDrawingInProgress = false
         switch tool.selectedTool {
@@ -236,11 +266,19 @@ public final class CanvasView: NSView {
         spotlightLayer?.path = path
     }
 
+    // MARK: - Object hit-testing (move & eraser tools)
+
+    /// Last-drawn wins, matching paint order: the object rendered on top is
+    /// the one a click visually lands on.
+    private func topmostObject(at point: CGPoint) -> DrawingObject? {
+        document?.objects(for: screenID).reversed().first { $0.isHit(at: point) }
+    }
+
     // MARK: - Text tool
 
     private func beginTextEditing(at point: CGPoint) {
         onTextEditingBegin?()
-        let font = NSFont.systemFont(ofSize: 12 + tool.lineWidth * 3)
+        let font = NSFont.systemFont(ofSize: tool.textFontSize)
         let lineHeight = font.ascender - font.descender + font.leading
         let textView = CommittingTextView(frame: NSRect(x: point.x, y: point.y - lineHeight / 2, width: 10, height: lineHeight))
         textView.font = font
@@ -342,14 +380,24 @@ public final class CanvasView: NSView {
         }
     }
 
+    /// A mid-fade stroke is erased by retracing the original drawing motion:
+    /// an invisible eraser starts at the stroke's first point and follows the
+    /// path toward the last, so the still-visible part is the trailing
+    /// fraction and the tip that vanishes last is where the pen lifted.
+    /// Shapes and text have no draw direction to retrace, so they fade to
+    /// transparent instead.
     private func render(_ object: DrawingObject) {
+        let fade = fadeProgressProvider?(object.id) ?? 0
+        guard fade < 1 else { return }
         switch object {
         case .stroke(let stroke):
-            drawStroke(points: stroke.points, color: stroke.color, width: stroke.width, highlighter: stroke.isHighlighter)
+            let points = fade > 0 ? StrokeGeometry.trailing(stroke.points, keepingFraction: 1 - fade) : stroke.points
+            drawStroke(points: points, color: stroke.color, width: stroke.width, highlighter: stroke.isHighlighter)
         case .shape(let shape):
-            drawShape(kind: shape.kind, start: shape.startPoint, end: shape.endPoint, color: shape.color, width: shape.width)
+            let color = fade > 0 ? shape.color.withAlphaComponent(shape.color.alphaComponent * (1 - fade)) : shape.color
+            drawShape(kind: shape.kind, start: shape.startPoint, end: shape.endPoint, color: color, width: shape.width)
         case .text(let text):
-            drawText(text)
+            drawText(text, alpha: 1 - fade)
         }
     }
 
@@ -406,23 +454,28 @@ public final class CanvasView: NSView {
     }
 
     private func drawShape(kind: ShapeKind, start: CGPoint, end: CGPoint, color: NSColor, width: CGFloat) {
-        let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x), height: abs(end.y - start.y))
         color.setStroke()
-        let path: NSBezierPath
+        let path = CanvasView.shapePath(kind: kind, start: start, end: end)
+        path.lineWidth = width
+        path.lineCapStyle = .round
+        path.stroke()
+    }
+
+    static func shapePath(kind: ShapeKind, start: CGPoint, end: CGPoint) -> NSBezierPath {
+        let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y), width: abs(end.x - start.x), height: abs(end.y - start.y))
         switch kind {
         case .rectangle:
-            path = NSBezierPath(rect: rect)
+            return NSBezierPath(rect: rect)
         case .ellipse:
-            path = NSBezierPath(ovalIn: rect)
+            return NSBezierPath(ovalIn: rect)
         case .line:
-            path = NSBezierPath()
+            let path = NSBezierPath()
             path.move(to: start)
             path.line(to: end)
+            return path
         case .arrow:
-            path = CanvasView.arrowPath(from: start, to: end)
+            return CanvasView.arrowPath(from: start, to: end)
         }
-        path.lineWidth = width
-        path.stroke()
     }
 
     /// Holding Shift while dragging a rectangle/ellipse locks it to a square/circle
@@ -450,6 +503,12 @@ public final class CanvasView: NSView {
         let arrowAngle: CGFloat = .pi / 7
         let p1 = CGPoint(x: end.x - arrowLength * cos(angle - arrowAngle), y: end.y - arrowLength * sin(angle - arrowAngle))
         let p2 = CGPoint(x: end.x - arrowLength * cos(angle + arrowAngle), y: end.y - arrowLength * sin(angle + arrowAngle))
+        // Each wing starts with its own `move(to:)` rather than continuing straight
+        // from the shaft: without it, the shaft and the first wing form one
+        // unbroken subpath with a sharp bend at `end`, and NSBezierPath's default
+        // miter join spikes out past the intended triangle at that bend — visible
+        // as a glitchy point stuck on one side of the arrowhead.
+        path.move(to: end)
         path.line(to: p1)
         path.move(to: end)
         path.line(to: p2)
@@ -484,15 +543,59 @@ public final class CanvasView: NSView {
         border.stroke()
     }
 
-    private func drawText(_ text: TextObject) {
+    private func drawText(_ text: TextObject, alpha: CGFloat = 1) {
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: text.fontSize),
-            .foregroundColor: text.color,
+            .foregroundColor: text.color.withAlphaComponent(text.color.alphaComponent * alpha),
         ]
         // `text.origin` is the bottom-left of the glyphs' bounding rect (see
         // `commitTextEditing`); in this non-flipped view, `draw(at:)` anchors its
         // point at exactly that corner, so no extra offset is needed here.
         NSAttributedString(string: text.string, attributes: attributes).draw(at: text.origin)
+    }
+}
+
+/// Hit-testing for the move and eraser tools. Lives here rather than in the
+/// Model because "was this object clicked" is a question about its *rendered*
+/// geometry, so it must reuse the exact same path construction the canvas
+/// draws with (`smoothedPath`, `shapePath`) — a separate approximation would
+/// drift the moment rendering changes.
+extension DrawingObject {
+    /// Grab/erase tolerance in points on each side of the visible geometry —
+    /// generous enough that a hairline stroke doesn't demand pixel-perfect clicks.
+    private static let hitTolerance: CGFloat = 8
+
+    /// Whether `point` (in the object's own canvas coordinates) lands on its
+    /// visible geometry: the smoothed stroke path, a shape's outline (not a
+    /// rectangle/ellipse's hollow interior, which would otherwise block
+    /// grabbing objects drawn inside it), or a text's bounding box.
+    /// Stroke/outline proximity is computed by thickening the actual rendered
+    /// path (`copy(strokingWithWidth:)`) and asking containment, so curves,
+    /// arrowheads, and fat highlighter strokes all hit-test exactly as drawn
+    /// rather than via bounding-box guesses.
+    func isHit(at point: CGPoint) -> Bool {
+        switch self {
+        case .stroke(let stroke):
+            guard stroke.points.count > 1 else { return false }
+            let drawnWidth = stroke.isHighlighter ? stroke.width * 3 : stroke.width
+            return CanvasView.smoothedPath(through: stroke.points).cgPath
+                .copy(strokingWithWidth: drawnWidth + Self.hitTolerance * 2, lineCap: .round, lineJoin: .round, miterLimit: 10)
+                .contains(point)
+        case .shape(let shape):
+            return CanvasView.shapePath(kind: shape.kind, start: shape.startPoint, end: shape.endPoint).cgPath
+                .copy(strokingWithWidth: shape.width + Self.hitTolerance * 2, lineCap: .round, lineJoin: .round, miterLimit: 10)
+                .contains(point)
+        case .text(let text):
+            let size = NSAttributedString(
+                string: text.string,
+                attributes: [.font: NSFont.systemFont(ofSize: text.fontSize)]
+            ).size()
+            // `text.origin` is the bottom-left of the rendered glyphs (see
+            // `drawText`), so in this non-flipped space the box extends up-right.
+            return CGRect(origin: text.origin, size: size)
+                .insetBy(dx: -Self.hitTolerance, dy: -Self.hitTolerance)
+                .contains(point)
+        }
     }
 }
 

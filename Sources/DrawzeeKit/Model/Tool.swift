@@ -31,6 +31,8 @@ public enum DrawingTool: String, Codable, CaseIterable {
     case shape
     case spotlight
     case text
+    case move
+    case eraser
 }
 
 public struct ToolState {
@@ -38,6 +40,11 @@ public struct ToolState {
     public var selectedShape: ShapeKind = .rectangle
     public var color: NSColor = .systemYellow
     public var lineWidth: CGFloat = 4
+
+    /// The point size the text tool renders at for the current `lineWidth`.
+    /// Shared between `CanvasView.beginTextEditing` and the toolbar's size
+    /// swatch so the number the user sees is the size the text actually gets.
+    public var textFontSize: CGFloat { 12 + lineWidth * 3 }
 
     public init() {}
 }

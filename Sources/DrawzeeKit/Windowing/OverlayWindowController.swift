@@ -49,6 +49,7 @@ public final class OverlayWindowController: NSObject {
         canvas.screenID = screenID
         canvas.document = document
         canvas.toolProvider = { [weak coordinator] in coordinator?.toolState ?? ToolState() }
+        canvas.fadeProgressProvider = { [weak coordinator] id in coordinator?.fadeProgress(for: id) }
         canvas.onTextEditingBegin = { [weak coordinator] in coordinator?.beginTextEditing() }
         canvas.onTextEditingEnd = { [weak coordinator] in coordinator?.endTextEditing() }
         canvas.onRegionSelected = { [weak coordinator, screenID] rect in

@@ -73,6 +73,15 @@ extension ShortcutBinding {
         .toolShape: ShortcutBinding(keyCode: UInt16(kVK_ANSI_S), modifiers: []),
         .toolSpotlight: ShortcutBinding(keyCode: UInt16(kVK_ANSI_F), modifiers: []),
         .toolText: ShortcutBinding(keyCode: UInt16(kVK_ANSI_T), modifiers: []),
+        .toolMove: ShortcutBinding(keyCode: UInt16(kVK_ANSI_V), modifiers: []),
+        .toolEraser: ShortcutBinding(keyCode: UInt16(kVK_ANSI_D), modifiers: []),
         .hideCanvas: ShortcutBinding(keyCode: UInt16(kVK_ANSI_E), modifiers: []),
+        .toggleAutofade: ShortcutBinding(keyCode: UInt16(kVK_Space), modifiers: []),
+        .shapeRectangle: ShortcutBinding(keyCode: UInt16(kVK_ANSI_1), modifiers: []),
+        .shapeEllipse: ShortcutBinding(keyCode: UInt16(kVK_ANSI_2), modifiers: []),
+        .shapeLine: ShortcutBinding(keyCode: UInt16(kVK_ANSI_3), modifiers: []),
+        .shapeArrow: ShortcutBinding(keyCode: UInt16(kVK_ANSI_4), modifiers: []),
+        .toggleSidebar: ShortcutBinding(keyCode: UInt16(kVK_ANSI_W), modifiers: [.option]),
+        .hideSidebar: ShortcutBinding(keyCode: UInt16(kVK_ANSI_W), modifiers: [.command]),
     ]
 }

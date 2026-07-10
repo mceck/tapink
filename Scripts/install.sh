@@ -21,6 +21,5 @@ fi
 rm -rf "${DEST}"
 cp -R "${BUILD_PATH}/${APP_BUNDLE}" "${DEST}"
 
-echo "==> Installed."
-echo "    Launch with: open \"${DEST}\""
-echo "    (Start at Login and reliable permission persistence require running from /Applications.)"
+open "/Applications/Drawzee.app"
+echo "==> Installed and started."

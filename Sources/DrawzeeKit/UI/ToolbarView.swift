@@ -7,8 +7,13 @@ struct ToolbarView: View {
     @State private var showSizePicker = false
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 10) {
             colorSwatch
+
+            if coordinator.isSidebarCollapsed {
+                collapsedToolIndicator
+                    .transition(.opacity)
+            }
 
             if !coordinator.isSidebarCollapsed {
                 Group {
@@ -16,17 +21,18 @@ struct ToolbarView: View {
 
                     Rectangle()
                         .fill(Color.white.opacity(0.15))
-                        .frame(width: 30, height: 1)
+                        .frame(width: 26, height: 1)
 
                     toolButton(.pen, systemName: "pencil.tip")
                     toolButton(.highlighter, systemName: "paintbrush.pointed.fill")
                     shapeButton
-                    toolButton(.spotlight, systemName: "flashlight.on.fill")
                     toolButton(.text, systemName: "textformat")
+                    toolButton(.move, systemName: "cursorarrow")
+                    toolButton(.eraser, systemName: "eraser")
 
                     Rectangle()
                         .fill(Color.white.opacity(0.15))
-                        .frame(width: 30, height: 1)
+                        .frame(width: 26, height: 1)
 
                     Button {
                         coordinator.beginRegionScreenshotSelection()
@@ -38,6 +44,12 @@ struct ToolbarView: View {
                         coordinator.toggleFreezeBackground()
                     } label: {
                         iconLabel(systemName: "snowflake", selected: coordinator.isBackgroundFrozen)
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        coordinator.toggleAutofade()
+                    } label: {
+                        iconLabel(systemName: "timer", selected: coordinator.isAutofadeEnabled)
                     }
                     .buttonStyle(.plain)
                     actionButton(systemName: "trash.fill") {
@@ -85,7 +97,7 @@ struct ToolbarView: View {
             iconLabel(systemName: "chevron.up", selected: false)
                 .rotationEffect(.degrees(coordinator.isSidebarCollapsed ? 180 : 0))
                 // Image's default hit area hugs the glyph itself (thin for a
-                // chevron), not the 36x36 frame around it — same class of issue
+                // chevron), not the 32x32 frame around it — same class of issue
                 // as the brush-size dot below; widen it to the whole square.
                 .contentShape(Rectangle())
         }
@@ -98,7 +110,7 @@ struct ToolbarView: View {
         } label: {
             Circle()
                 .fill(Color(nsColor: coordinator.toolState.color))
-                .frame(width: 26, height: 26)
+                .frame(width: 24, height: 24)
         }
         .buttonStyle(.plain)
         .popover(isPresented: $showColorPicker, arrowEdge: .trailing) {
@@ -106,24 +118,60 @@ struct ToolbarView: View {
         }
     }
 
+    // Mirrors the systemName used by each `toolButton`/`shapeButton` below, so
+    // the collapsed-sidebar indicator always matches what the expanded tool
+    // row would highlight.
+    private var selectedToolSystemName: String {
+        switch coordinator.toolState.selectedTool {
+        case .pen: return "pencil.tip"
+        case .highlighter: return "paintbrush.pointed.fill"
+        case .shape: return coordinator.toolState.selectedShape.symbolName
+        case .spotlight: return "flashlight.on.fill"
+        case .text: return "textformat"
+        case .move: return "cursorarrow"
+        case .eraser: return "eraser"
+        }
+    }
+
+    private var collapsedToolIndicator: some View {
+        iconLabel(systemName: selectedToolSystemName, selected: true)
+    }
+
+    private var isTextTool: Bool {
+        coordinator.toolState.selectedTool == .text
+    }
+
     private var sizeSwatch: some View {
         Button {
             showSizePicker.toggle()
         } label: {
-            Circle()
-                .fill(Color.white)
-                .frame(width: max(4, min(20, coordinator.toolState.lineWidth)), height: max(4, min(20, coordinator.toolState.lineWidth)))
-                .frame(width: 26, height: 26)
-                // A `Circle` only hit-tests inside its own path by default, so at
-                // small brush sizes the dot is a near-unclickable few points wide.
-                // Widening the content shape to the full frame makes the whole
-                // 26x26 button area clickable, not just the visible dot.
-                .contentShape(Rectangle())
+            Group {
+                if isTextTool {
+                    // A dot whose diameter tracks `lineWidth` says nothing useful
+                    // about text; show the actual point size the text tool will
+                    // render at instead.
+                    Text("\(Int(coordinator.toolState.textFontSize))px")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: max(4, min(18, coordinator.toolState.lineWidth)), height: max(4, min(18, coordinator.toolState.lineWidth)))
+                }
+            }
+            .frame(width: 24, height: 24)
+            // A `Circle` only hit-tests inside its own path by default, so at
+            // small brush sizes the dot is a near-unclickable few points wide.
+            // Widening the content shape to the full frame makes the whole
+            // 24x24 button area clickable, not just the visible dot.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .popover(isPresented: $showSizePicker, arrowEdge: .trailing) {
             VStack(spacing: 8) {
-                Text("Brush size").font(.caption).foregroundStyle(.secondary)
+                Text(isTextTool ? "Font size" : "Brush size").font(.caption).foregroundStyle(.secondary)
                 Slider(
                     value: Binding(get: { coordinator.toolState.lineWidth }, set: { coordinator.setLineWidth($0) }),
                     in: 1...40
@@ -147,15 +195,17 @@ struct ToolbarView: View {
             }
         } label: {
             Image(systemName: coordinator.toolState.selectedShape.symbolName)
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(.white)
-                .frame(width: 36, height: 36)
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .frame(width: 36, height: 36)
+        .frame(width: 32, height: 32)
         .background(coordinator.toolState.selectedTool == .shape ? Color.accentColor : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .contentShape(Rectangle())
     }
 
     private func toolButton(_ tool: DrawingTool, systemName: String) -> some View {
@@ -170,20 +220,27 @@ struct ToolbarView: View {
     private func actionButton(systemName: String, tint: Color = .white, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundColor(tint)
-                .frame(width: 36, height: 36)
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
     private func iconLabel(systemName: String, selected: Bool) -> some View {
         Image(systemName: systemName)
-            .font(.system(size: 17, weight: .medium))
+            .font(.system(size: 15, weight: .medium))
             .foregroundColor(.white)
-            .frame(width: 36, height: 36)
+            .frame(width: 32, height: 32)
             .background(selected ? Color.accentColor : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            // Same class of issue as the brush-size dot and the collapse chevron:
+            // a thin/sparse glyph (pencil tip, line diagonal, eraser...) only
+            // hit-tests over its own visible strokes by default, leaving most of
+            // the 32x32 button visually present but unclickable. Force the whole
+            // square to be tappable.
+            .contentShape(Rectangle())
     }
 }
 

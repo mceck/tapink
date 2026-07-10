@@ -70,10 +70,7 @@ public final class ScreenshotService {
     private func captureDisplayImage(displayID: ScreenID, excludingWindowNumbers: [Int]) async -> CGImage? {
         guard CGPreflightScreenCaptureAccess() else {
             NSLog("Drawzee: Screen Recording permission not granted yet; opening System Settings.")
-            _ = CGRequestScreenCaptureAccess()
-            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                NSWorkspace.shared.open(url)
-            }
+            PermissionsManager.shared.requestScreenRecording()
             return nil
         }
 

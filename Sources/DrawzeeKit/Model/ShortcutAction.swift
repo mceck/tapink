@@ -18,7 +18,16 @@ public enum ShortcutAction: String, Codable, CaseIterable {
     case toolShape
     case toolSpotlight
     case toolText
+    case toolMove
+    case toolEraser
     case hideCanvas
+    case toggleAutofade
+    case shapeRectangle
+    case shapeEllipse
+    case shapeLine
+    case shapeArrow
+    case toggleSidebar
+    case hideSidebar
 
     public var isGlobal: Bool {
         self == .activateDrawMode
@@ -40,7 +49,16 @@ public enum ShortcutAction: String, Codable, CaseIterable {
         case .toolShape: return "Shape Tool"
         case .toolSpotlight: return "Spotlight Tool"
         case .toolText: return "Text Tool"
+        case .toolMove: return "Move Tool"
+        case .toolEraser: return "Eraser Tool"
         case .hideCanvas: return "Hide Canvas"
+        case .toggleAutofade: return "Auto-Fade Drawings"
+        case .shapeRectangle: return "Rectangle Shape"
+        case .shapeEllipse: return "Ellipse Shape"
+        case .shapeLine: return "Line Shape"
+        case .shapeArrow: return "Arrow Shape"
+        case .toggleSidebar: return "Toggle Sidebar"
+        case .hideSidebar: return "Hide Sidebar"
         }
     }
 }
