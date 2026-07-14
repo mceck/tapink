@@ -13,7 +13,7 @@ TapInk lives quietly in the menu bar. Turns your whole desktop into a canvas whe
 
 ## Installation
 
-[Download here](https://github.com/mceck/tapink/releases/download/latest/TapInk.dmg)
+[Download here](https://github.com/mceck/tapink/releases/latest/download/TapInk.dmg)
 
 Or build it from sources
 ```bash
