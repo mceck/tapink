@@ -50,7 +50,7 @@ public final class AppSettings {
     }
 
     public static var defaultScreenshotFolder: String {
-        (NSHomeDirectory() as NSString).appendingPathComponent("Pictures/Tapink")
+        (NSHomeDirectory() as NSString).appendingPathComponent("Pictures/TapInk")
     }
 
     public var screenshotSaveFolderPath: String {

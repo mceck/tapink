@@ -4,7 +4,7 @@ import CoreGraphics
 /// Two-tier shortcut handling:
 ///
 /// - A persistent **global** intercept handles draw-mode activation, since it
-///   must fire even when no Tapink window exists yet. This is a `CGEventTap`,
+///   must fire even when no TapInk window exists yet. This is a `CGEventTap`,
 ///   not a plain `NSEvent.addGlobalMonitorForEvents` monitor: a global monitor
 ///   can only *observe* the keystroke, it can't consume it, so the previously-
 ///   frontmost app (a text editor, a browser) still received the raw Tab key
@@ -69,7 +69,7 @@ public final class HotkeyManager {
             },
             userInfo: selfPtr
         ) else {
-            NSLog("Tapink: failed to create event tap for draw-mode activation (Accessibility permission missing?)")
+            NSLog("TapInk: failed to create event tap for draw-mode activation (Accessibility permission missing?)")
             return
         }
         eventTap = tap
@@ -93,7 +93,7 @@ public final class HotkeyManager {
         else {
             return Unmanaged.passRetained(cgEvent)
         }
-        NSLog("Tapink: event tap matched activateDrawMode, appActive=\(NSApp.isActive)")
+        NSLog("TapInk: event tap matched activateDrawMode, appActive=\(NSApp.isActive)")
         // Activating synchronously, in direct response to the triggering key
         // event, matters: macOS is far more willing to actually hand over
         // keyboard focus to a background accessory app when the activation
@@ -111,7 +111,7 @@ public final class HotkeyManager {
     private func handleLocal(_ event: NSEvent) -> Bool {
         guard let coordinator, coordinator.isDrawModeActive else { return false }
         let settings = AppSettings.shared
-        NSLog("Tapink: local monitor saw keyCode=\(event.keyCode) modifiers=\(event.modifierFlags.rawValue) isEditingText=\(coordinator.isEditingText) appActive=\(NSApp.isActive)")
+        NSLog("TapInk: local monitor saw keyCode=\(event.keyCode) modifiers=\(event.modifierFlags.rawValue) isEditingText=\(coordinator.isEditingText) appActive=\(NSApp.isActive)")
 
         if coordinator.isEditingText {
             if settings.binding(for: .exitDrawMode).matches(event) {

@@ -1,5 +1,5 @@
 import XCTest
-@testable import TapinkKit
+@testable import TapInkKit
 
 /// Covers the arc-length truncation behind the auto-fade retract animation.
 /// Truncation is measured along the path (not by point count) and interpolates

@@ -96,7 +96,7 @@ public final class ScreenRecordingService: NSObject {
     ) async -> Bool {
         guard stream == nil else { return false }
         guard CGPreflightScreenCaptureAccess() else {
-            NSLog("Tapink: Screen Recording permission not granted yet; opening System Settings.")
+            NSLog("TapInk: Screen Recording permission not granted yet; opening System Settings.")
             PermissionsManager.shared.requestScreenRecording()
             return false
         }
@@ -104,7 +104,7 @@ public final class ScreenRecordingService: NSObject {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
-                NSLog("Tapink: no SCDisplay matching displayID \(displayID)")
+                NSLog("TapInk: no SCDisplay matching displayID \(displayID)")
                 return false
             }
             // Always the `excludingApplications:exceptingWindows:` initializer, even with an
@@ -127,12 +127,12 @@ public final class ScreenRecordingService: NSObject {
             let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
             input.expectsMediaDataInRealTime = true
             guard writer.canAdd(input) else {
-                NSLog("Tapink: asset writer rejected video input")
+                NSLog("TapInk: asset writer rejected video input")
                 return false
             }
             writer.add(input)
             guard writer.startWriting() else {
-                NSLog("Tapink: asset writer failed to start: \(String(describing: writer.error))")
+                NSLog("TapInk: asset writer failed to start: \(String(describing: writer.error))")
                 return false
             }
 
@@ -146,7 +146,7 @@ public final class ScreenRecordingService: NSObject {
             sessionStarted = false
             return true
         } catch {
-            NSLog("Tapink: failed to start screen recording: \(error)")
+            NSLog("TapInk: failed to start screen recording: \(error)")
             return false
         }
     }
@@ -160,7 +160,7 @@ public final class ScreenRecordingService: NSObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
         return URL(fileURLWithPath: folderPath)
-            .appendingPathComponent("Tapink Recording \(formatter.string(from: Date())).mov")
+            .appendingPathComponent("TapInk Recording \(formatter.string(from: Date())).mov")
     }
 }
 
@@ -189,6 +189,6 @@ extension ScreenRecordingService: SCStreamOutput {
 
 extension ScreenRecordingService: SCStreamDelegate {
     public func stream(_ stream: SCStream, didStopWithError error: Error) {
-        NSLog("Tapink: screen recording stream stopped with error: \(error)")
+        NSLog("TapInk: screen recording stream stopped with error: \(error)")
     }
 }

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>Tapink</string>
+    <string>TapInk</string>
     <key>CFBundleIdentifier</key>
     <string>io.mcdev.tapink</string>
     <key>CFBundleName</key>
-    <string>Tapink</string>
+    <string>TapInk</string>
     <key>CFBundleDisplayName</key>
-    <string>Tapink</string>
+    <string>TapInk</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -25,6 +25,6 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>Tapink needs to see your screen to capture annotated screenshots.</string>
+    <string>TapInk needs to see your screen to capture annotated screenshots.</string>
 </dict>
 </plist>

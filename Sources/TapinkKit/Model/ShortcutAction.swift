@@ -1,7 +1,7 @@
 import Foundation
 
 /// Every user-facing rebindable action. `isGlobal` actions must fire even when no
-/// Tapink window exists yet (only draw-mode activation needs this); everything
+/// TapInk window exists yet (only draw-mode activation needs this); everything
 /// else only needs to apply once draw mode is already active.
 public enum ShortcutAction: String, Codable, CaseIterable {
     case activateDrawMode

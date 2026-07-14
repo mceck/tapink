@@ -39,7 +39,7 @@ public final class ScreenshotService {
         let pixelRect = ScreenshotService.pixelRect(forRegionInPoints: regionInPoints, imageHeightInPixels: cgImage.height, scale: scale)
 
         guard let cropped = cgImage.cropping(to: pixelRect) else {
-            NSLog("Tapink: failed to crop screenshot to selected region \(pixelRect)")
+            NSLog("TapInk: failed to crop screenshot to selected region \(pixelRect)")
             return false
         }
         playShutterSound()
@@ -75,7 +75,7 @@ public final class ScreenshotService {
     @MainActor
     private func captureDisplayImage(displayID: ScreenID, excludingWindowNumbers: [Int]) async -> CGImage? {
         guard CGPreflightScreenCaptureAccess() else {
-            NSLog("Tapink: Screen Recording permission not granted yet; opening System Settings.")
+            NSLog("TapInk: Screen Recording permission not granted yet; opening System Settings.")
             PermissionsManager.shared.requestScreenRecording()
             return nil
         }
@@ -83,7 +83,7 @@ public final class ScreenshotService {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
             guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
-                NSLog("Tapink: no SCDisplay matching displayID \(displayID)")
+                NSLog("TapInk: no SCDisplay matching displayID \(displayID)")
                 return nil
             }
             let excludedWindows = content.windows.filter { excludingWindowNumbers.contains(Int($0.windowID)) }
@@ -100,7 +100,7 @@ public final class ScreenshotService {
 
             return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
         } catch {
-            NSLog("Tapink: screenshot capture failed: \(error)")
+            NSLog("TapInk: screenshot capture failed: \(error)")
             return nil
         }
     }
@@ -134,7 +134,7 @@ public final class ScreenshotService {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
         let url = URL(fileURLWithPath: folderPath)
-            .appendingPathComponent("Tapink \(formatter.string(from: Date())).png")
+            .appendingPathComponent("TapInk \(formatter.string(from: Date())).png")
 
         guard let tiff = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff),

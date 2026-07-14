@@ -1,5 +1,5 @@
 import XCTest
-@testable import TapinkKit
+@testable import TapInkKit
 
 final class ShortcutActionTests: XCTestCase {
     func testOnlyActivateDrawModeIsGlobal() {

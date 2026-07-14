@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Tapink is a native macOS menu-bar screen-annotation app: it lives in the tray, and on activation shows a
+TapInk is a native macOS menu-bar screen-annotation app: it lives in the tray, and on activation shows a
 transparent overlay on top of the live screen (not a screenshot) that you can draw on, across every
 connected monitor. Swift Package Manager project, AppKit for system-level pieces (status item, overlay
 windows, event monitoring), SwiftUI for toolbar/Settings/About content. Target: macOS 14 Sonoma+,
@@ -14,16 +14,16 @@ unsandboxed, ad-hoc/personal-team signed (not App Store).
 
 ```bash
 swift build                 # debug build, fast inner loop for compile-error checking
-swift test                   # runs Tests/TapinkKitTests
+swift test                   # runs Tests/TapInkKitTests
 swift test --filter DrawingDocumentTests            # run a single test case
 swift test --filter DrawingDocumentTests/testUndoRemovesLastObject   # run a single test method
 
-Scripts/build.sh             # release build -> assembles & codesigns Tapink.app
-Scripts/install.sh           # copies the built Tapink.app into /Applications
+Scripts/build.sh             # release build -> assembles & codesigns TapInk.app
+Scripts/install.sh           # copies the built TapInk.app into /Applications
 ```
 
-Run via `open .build/output/Tapink.app` (after `build.sh`) or `open /Applications/Tapink.app` (after
-`install.sh`). **Never run the raw binary directly** (`.build/*/Tapink`) — outside a real `.app` bundle it
+Run via `open .build/output/TapInk.app` (after `build.sh`) or `open /Applications/TapInk.app` (after
+`install.sh`). **Never run the raw binary directly** (`.build/*/TapInk`) — outside a real `.app` bundle it
 isn't registered with LaunchServices, so it can't take real keyboard focus and the menu bar item misbehaves.
 No Xcode project on purpose: the app is hand-assembled from the terminal.
 
@@ -35,9 +35,9 @@ must be re-granted every rebuild). `Package.swift` pins `swift-tools-version: 5.
 ## Architecture
 
 ### Module layout
-- `Sources/Tapink` — thin executable target: `main.swift` bootstraps `NSApplication`, `AppDelegate.swift`
+- `Sources/TapInk` — thin executable target: `main.swift` bootstraps `NSApplication`, `AppDelegate.swift`
   wires the permission dance. Almost no logic lives here.
-- `Sources/TapinkKit` — library target with everything else, by concern: `Model/`, `Windowing/`,
+- `Sources/TapInkKit` — library target with everything else, by concern: `Model/`, `Windowing/`,
   `Hotkeys/`, `Screenshot/`, `Recording/`, `Settings/`, `MenuBar/`, `UI/`. Unit-testable without a GUI/bundle.
 
 ### `DrawSessionCoordinator` is the hub
@@ -79,7 +79,7 @@ cursor leaves a screen.
 
 ### Hotkeys — two tiers, on purpose
 `Hotkeys/HotkeyManager.swift`: a persistent **global** monitor handles only draw-mode activation (must fire
-with no Tapink window yet; requires Accessibility trust). A **local** monitor handles every other shortcut,
+with no TapInk window yet; requires Accessibility trust). A **local** monitor handles every other shortcut,
 only while draw mode is active, returning `nil` to swallow the event so it doesn't reach whatever's behind
 the overlay. Matching goes through `AppSettings.binding(for:)` (user overrides over `ShortcutBinding
 .defaults`) — **to add a rebindable action**, update `ShortcutAction`, `ShortcutBinding.defaults`, and the
@@ -114,7 +114,7 @@ always mean copy/save regardless of it.
 ### Screen recording pipeline
 `Recording/ScreenRecordingService.swift` is `ScreenshotService`'s stateful sibling: keeps an `SCStream`
 running, feeding sample buffers straight into an `AVAssetWriter` (H.264, `.mov`) saved alongside screenshots
-in `AppSettings.screenshotSaveFolderPath` (`Tapink Recording <timestamp>.mov`). No audio track
+in `AppSettings.screenshotSaveFolderPath` (`TapInk Recording <timestamp>.mov`). No audio track
 (`capturesAudio` stays `false` — not requested, would need mic permission).
 
 - **One recording at a time:** `DrawSessionCoordinator.activeRecordingKind` (`.screen`/`.region`/`nil`).

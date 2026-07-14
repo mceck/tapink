@@ -1,6 +1,6 @@
 import XCTest
 import AppKit
-@testable import TapinkKit
+@testable import TapInkKit
 
 final class AppSettingsTests: XCTestCase {
     // Mirrors AppSettings' own (private) UserDefaults key names, since the enum
@@ -114,15 +114,15 @@ final class AppSettingsTests: XCTestCase {
 
     // MARK: - Screenshot save folder
 
-    func testScreenshotSaveFolderPathDefaultsToPicturesTapink() {
+    func testScreenshotSaveFolderPathDefaultsToPicturesTapInk() {
         UserDefaults.standard.removeObject(forKey: screenshotFolderKey)
         XCTAssertEqual(AppSettings.shared.screenshotSaveFolderPath, AppSettings.defaultScreenshotFolder)
-        XCTAssertTrue(AppSettings.defaultScreenshotFolder.hasSuffix("Pictures/Tapink"))
+        XCTAssertTrue(AppSettings.defaultScreenshotFolder.hasSuffix("Pictures/TapInk"))
     }
 
     func testScreenshotSaveFolderPathRoundTrips() {
-        AppSettings.shared.screenshotSaveFolderPath = "/tmp/TapinkTestFolder"
-        XCTAssertEqual(AppSettings.shared.screenshotSaveFolderPath, "/tmp/TapinkTestFolder")
+        AppSettings.shared.screenshotSaveFolderPath = "/tmp/TapInkTestFolder"
+        XCTAssertEqual(AppSettings.shared.screenshotSaveFolderPath, "/tmp/TapInkTestFolder")
     }
 
     // MARK: - Max recording duration

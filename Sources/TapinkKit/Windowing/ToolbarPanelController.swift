@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The single draggable tool sidebar. It is a `.nonactivatingPanel` so it can
 /// become key (needed for its own controls and for tool-shortcut keystrokes)
-/// without activating Tapink as the frontmost application, and sits one level
+/// without activating TapInk as the frontmost application, and sits one level
 /// above the per-screen canvas panels so its clicks never leak through to the
 /// canvas beneath it.
 public final class ToolbarPanelController: NSObject {

@@ -57,7 +57,7 @@ public final class DrawSessionCoordinator: ObservableObject {
     /// `stopRecording()`.
     private var recordingTimeoutTimer: Timer?
 
-    /// Every Tapink-owned window that must never itself appear in a screenshot or recording —
+    /// Every TapInk-owned window that must never itself appear in a screenshot or recording —
     /// the toolbar and the toast HUD. `freezeBackground()` additionally excludes the overlay
     /// canvases themselves (see there).
     private var excludedCaptureWindowNumbers: [Int] {
@@ -122,7 +122,7 @@ public final class DrawSessionCoordinator: ObservableObject {
     public func enableDrawMode() {
         guard !isDrawModeActive else { return }
         // A `.nonactivatingPanel` can become key without showing a Dock icon or
-        // stealing Cmd-Tab visibility, but it still needs Tapink to actually be
+        // stealing Cmd-Tab visibility, but it still needs TapInk to actually be
         // the active application to reliably receive real keyboard/mouse-moved
         // input — otherwise shortcuts, text entry, and the spotlight tool only
         // work sporadically depending on which app last held focus.
@@ -158,11 +158,11 @@ public final class DrawSessionCoordinator: ObservableObject {
         // NOT guarantee activation ("the framework does not guarantee that the
         // app will be activated at all" — AppKit header). The older, forceful
         // API reliably steals keyboard focus, which is exactly what's needed
-        // here for shortcuts/text-entry to actually reach Tapink.
+        // here for shortcuts/text-entry to actually reach TapInk.
         NSApp.activate(ignoringOtherApps: true)
         toolbarController.show(on: DrawSessionCoordinator.screenUnderCursor() ?? NSScreen.main, revealed: !isSidebarHidden)
         showToast("Draw Mode On", systemImage: "pencil.tip")
-        NSLog("Tapink: enableDrawMode done, appActive=\(NSApp.isActive)")
+        NSLog("TapInk: enableDrawMode done, appActive=\(NSApp.isActive)")
     }
 
     public func disableDrawMode() {
@@ -352,7 +352,7 @@ public final class DrawSessionCoordinator: ObservableObject {
     public func freezeBackground() {
         guard isDrawModeActive, !isBackgroundFrozen else { return }
         isBackgroundFrozen = true
-        // Exclude every one of Tapink's own windows (toolbar + every overlay canvas) so the
+        // Exclude every one of TapInk's own windows (toolbar + every overlay canvas) so the
         // frozen backdrop is a clean shot of what's underneath — existing drawn objects stay
         // vector-only in `document` and keep replaying on top each frame, so undo/redo/clear
         // still work normally against a frozen background.

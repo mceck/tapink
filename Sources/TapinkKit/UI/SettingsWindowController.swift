@@ -7,7 +7,7 @@ final class SettingsWindowController: NSWindowController {
     private convenience init() {
         let hosting = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: hosting)
-        window.title = "Tapink Settings"
+        window.title = "TapInk Settings"
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
         self.init(window: window)
@@ -26,7 +26,7 @@ final class AboutWindowController: NSWindowController {
     private convenience init() {
         let hosting = NSHostingController(rootView: AboutView())
         let window = NSWindow(contentViewController: hosting)
-        window.title = "About Tapink"
+        window.title = "About TapInk"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         self.init(window: window)

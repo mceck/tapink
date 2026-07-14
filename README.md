@@ -1,19 +1,19 @@
-# Tapink
+# TapInk
 
 Draw on top of your screen.
 Live, over whatever is running underneath across every monitor you have connected. 
 
 
-![Tapink](docs/logo.png)
+![TapInk](docs/logo.png)
 
-Tapink lives quietly in the menu bar. Turns your whole desktop into a canvas whenever you need to point something out annotate a video call or mark up what's on screen.
+TapInk lives quietly in the menu bar. Turns your whole desktop into a canvas whenever you need to point something out annotate a video call or mark up what's on screen.
 
-[![Tapink](docs/demo.webp)](#)
+[![TapInk](docs/demo.webp)](#)
 
 
 ## Installation
 
-[Download here](https://github.com/mceck/tapink/releases/download/latest/Tapink.dmg)
+[Download here](https://github.com/mceck/tapink/releases/download/latest/TapInk.dmg)
 
 Or build it from sources
 ```bash
@@ -21,9 +21,9 @@ Scripts/build.sh
 Scripts/install.sh
 ```
 
-Tapink isn't signed with a paid Apple Developer certificate, so macOS flags it as "unverified".
+TapInk isn't signed with a paid Apple Developer certificate, so macOS flags it as "unverified".
 You'll need to allow opening in System Settings → Privacy & Security
-or run this: `xattr -cr /Applications/Tapink.app`
+or run this: `xattr -cr /Applications/TapInk.app`
 
 ## Features
 
@@ -51,7 +51,7 @@ or run this: `xattr -cr /Applications/Tapink.app`
 
 ## First Launch: Permissions
 
-Tapink needs two permissions:
+TapInk needs two permissions:
 
 | Permission | Why 
 |---|---|
@@ -62,15 +62,15 @@ Tapink needs two permissions:
 
 ### The menu bar icon
 
-Tapink sits in the menu bar. Click it for:
+TapInk sits in the menu bar. Click it for:
 
 * **Enable/Disable Drawing Mode**
 
 * **Settings…**
 
-* **About Tapink**
+* **About TapInk**
 
-* **Quit Tapink**
+* **Quit TapInk**
 
 ### Entering Draw Mode
 

@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 BUILD_PATH=".build/output"
 mkdir -p $BUILD_PATH
 
-APP_NAME="Tapink"
+APP_NAME="TapInk"
 APP_BUNDLE="${APP_NAME}.app"
 
 echo "==> Building ${APP_NAME} (release)..."
@@ -36,7 +36,7 @@ else
     echo "    Personal Team is enough), then re-run this script."
 fi
 
-codesign --force --sign "${IDENTITY}" --entitlements "Resources/Tapink.entitlements" "${BUILD_PATH}/${APP_BUNDLE}"
+codesign --force --sign "${IDENTITY}" --entitlements "Resources/TapInk.entitlements" "${BUILD_PATH}/${APP_BUNDLE}"
 
 echo "==> Done."
 echo "    Run with:      open ${BUILD_PATH}/${APP_BUNDLE}"

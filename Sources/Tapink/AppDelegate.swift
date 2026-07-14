@@ -1,7 +1,7 @@
 import AppKit
 import ApplicationServices
 import CoreGraphics
-import TapinkKit
+import TapInkKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var coordinator: DrawSessionCoordinator!

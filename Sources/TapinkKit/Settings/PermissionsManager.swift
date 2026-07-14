@@ -3,7 +3,7 @@ import ApplicationServices
 import CoreGraphics
 import ScreenCaptureKit
 
-/// Live status of the two system permissions Tapink needs — Accessibility
+/// Live status of the two system permissions TapInk needs — Accessibility
 /// for the global ⌥Tab shortcut, Screen Recording for screenshots — plus the
 /// actions to (re)request them. Used by `SettingsView` to show a "Grant…"
 /// button instead of leaving the user to guess why something silently isn't
@@ -56,7 +56,7 @@ public final class PermissionsManager: ObservableObject {
     /// yet) and — crucially — runs a ScreenCaptureKit content enumeration.
     /// `CGRequestScreenCaptureAccess()` alone doesn't reliably register the
     /// app in the Screen Recording pane's list, so the user landed on a pane
-    /// without Tapink in it and had to add the app manually via "+"; an
+    /// without TapInk in it and had to add the app manually via "+"; an
     /// actual SCK query is what creates the TCC entry that makes the row show
     /// up pre-inserted. The enumeration result is intentionally discarded —
     /// the call exists purely for that side effect.

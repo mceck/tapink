@@ -1,5 +1,5 @@
 import XCTest
-@testable import TapinkKit
+@testable import TapInkKit
 
 final class DrawingDocumentTests: XCTestCase {
     private func sampleStroke(screen: ScreenID = 1) -> DrawingObject {

@@ -1,5 +1,5 @@
 import XCTest
-@testable import TapinkKit
+@testable import TapInkKit
 
 /// Covers the erase-duration policy: strokes unwind at a constant along-the-path
 /// speed (so duration scales with length), clamped at both ends, while shapes

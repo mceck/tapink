@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BUILD_PATH=".build/output"
-APP_NAME="Tapink"
+APP_NAME="TapInk"
 APP_BUNDLE="${APP_NAME}.app"
 DMG_NAME="${APP_NAME}.dmg"
 DMG_PATH="${BUILD_PATH}/${DMG_NAME}"

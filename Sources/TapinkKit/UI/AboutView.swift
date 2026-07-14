@@ -6,7 +6,7 @@ struct AboutView: View {
             Image(systemName: "scribble.variable")
                 .font(.system(size: 44))
                 .foregroundStyle(.tint)
-            Text("Tapink").font(.title2).bold()
+            Text("TapInk").font(.title2).bold()
             Text("Version 1.0").font(.callout).foregroundStyle(.secondary)
             Text("Draw on your screen, live, across every monitor.")
                 .font(.caption)

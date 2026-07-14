@@ -2,19 +2,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "Tapink",
+    name: "TapInk",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "Tapink",
-            dependencies: ["TapinkKit"]
+            name: "TapInk",
+            dependencies: ["TapInkKit"]
         ),
         .target(
-            name: "TapinkKit"
+            name: "TapInkKit"
         ),
         .testTarget(
-            name: "TapinkKitTests",
-            dependencies: ["TapinkKit"]
+            name: "TapInkKitTests",
+            dependencies: ["TapInkKit"]
         ),
     ]
 )
