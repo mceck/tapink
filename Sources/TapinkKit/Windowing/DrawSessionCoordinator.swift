@@ -60,8 +60,9 @@ public final class DrawSessionCoordinator: ObservableObject {
 
     /// Every TapInk-owned window that must never itself appear in a screenshot or recording —
     /// the toolbar, the toast HUD, and the hover-tooltip panel. `freezeBackground()`
-    /// additionally excludes the overlay canvases themselves (see there).
-    private var excludedCaptureWindowNumbers: [Int] {
+    /// additionally excludes the overlay canvases themselves (see there). Not `private`: the
+    /// external API's screenshot endpoint (`APIRouter`) reuses this rather than duplicating it.
+    var excludedCaptureWindowNumbers: [Int] {
         [toolbarController.windowNumber, toastController.windowNumber, tooltipController.windowNumber]
     }
 

@@ -99,16 +99,29 @@ public final class AppSettings {
         static let recordingCodec = "recordingCodec"
         static let recordingQuality = "recordingQuality"
         static let temporaryMoveToolModifier = "temporaryMoveToolModifier"
+        static let apiEnabled = "apiEnabled"
+        static let apiPort = "apiPort"
+        static let apiToken = "apiToken"
     }
 
     /// Called whenever `hideFromDockAndSwitcher` changes, so the app delegate can
     /// apply the new NSApplication activation policy live.
     public var onHideFromDockChanged: ((Bool) -> Void)?
 
+    /// Called whenever `apiEnabled` changes, so the app delegate can start/stop `APIServer` live.
+    public var onAPIEnabledChanged: ((Bool) -> Void)?
+    /// Called whenever `apiPort` changes, so the app delegate can restart `APIServer` on the new port.
+    public var onAPIPortChanged: ((Int) -> Void)?
+
     private var overrides: [String: ShortcutBinding] = [:]
 
     private init() {
         defaults.register(defaults: [Keys.hideFromDock: true])
+        // Generated once and persisted, rather than a `register(defaults:)` fallback — that
+        // would recompute a *different* random value every launch instead of a stable one.
+        if defaults.string(forKey: Keys.apiToken) == nil {
+            defaults.set(UUID().uuidString, forKey: Keys.apiToken)
+        }
         loadShortcutOverrides()
     }
 
@@ -250,6 +263,43 @@ public final class AppSettings {
             TemporaryMoveToolModifier(rawValue: defaults.string(forKey: Keys.temporaryMoveToolModifier) ?? "") ?? .command
         }
         set { defaults.set(newValue.rawValue, forKey: Keys.temporaryMoveToolModifier) }
+    }
+
+    /// Whether the local HTTP control API (draw mode, drawing primitives, screenshots — see
+    /// `APIServer`) is running. Off by default: unlike every other setting here, enabling this
+    /// opens a local network listener, so it's an explicit opt-in rather than always-on.
+    public var apiEnabled: Bool {
+        get { defaults.bool(forKey: Keys.apiEnabled) }
+        set {
+            defaults.set(newValue, forKey: Keys.apiEnabled)
+            onAPIEnabledChanged?(newValue)
+        }
+    }
+
+    public static let defaultAPIPort = 47663
+
+    public var apiPort: Int {
+        get {
+            let stored = defaults.integer(forKey: Keys.apiPort)
+            return stored > 0 ? stored : AppSettings.defaultAPIPort
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.apiPort)
+            onAPIPortChanged?(newValue)
+        }
+    }
+
+    /// Bearer token every request to the local API must present, generated once in `init()` and
+    /// stable across restarts. Read-only from outside — see `regenerateAPIToken()`.
+    public var apiToken: String {
+        defaults.string(forKey: Keys.apiToken) ?? ""
+    }
+
+    @discardableResult
+    public func regenerateAPIToken() -> String {
+        let generated = UUID().uuidString
+        defaults.set(generated, forKey: Keys.apiToken)
+        return generated
     }
 
     private func loadShortcutOverrides() {

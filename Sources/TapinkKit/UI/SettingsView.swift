@@ -77,6 +77,24 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section("External API") {
+                Toggle("Enable Local API", isOn: $model.apiEnabled)
+                TextField("Port", value: $model.apiPort, format: .number.grouping(.never))
+                    .disabled(!model.apiEnabled)
+                HStack {
+                    Text(model.apiToken)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button("Copy") { model.copyToken() }
+                    Button("Regenerate") { model.regenerateToken() }
+                }
+                Text("Lets a local process (e.g. an MCP server) control draw mode, drawing, and screenshots over HTTP on 127.0.0.1. Requests must include this token as a Bearer token.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Shortcuts") {
                 ForEach(ShortcutAction.allCases, id: \.self) { action in
                     ShortcutRow(action: action)
@@ -147,6 +165,13 @@ final class SettingsViewModel: ObservableObject {
     @Published var recordingQuality: RecordingQuality {
         didSet { AppSettings.shared.recordingQuality = recordingQuality }
     }
+    @Published var apiEnabled: Bool {
+        didSet { AppSettings.shared.apiEnabled = apiEnabled }
+    }
+    @Published var apiPort: Int {
+        didSet { AppSettings.shared.apiPort = apiPort }
+    }
+    @Published var apiToken: String
 
     init() {
         startAtLogin = LoginItemManager.shared.isEnabled
@@ -160,6 +185,18 @@ final class SettingsViewModel: ObservableObject {
         maxRecordingDurationMinutes = AppSettings.shared.maxRecordingDurationMinutes
         recordingCodec = AppSettings.shared.recordingCodec
         recordingQuality = AppSettings.shared.recordingQuality
+        apiEnabled = AppSettings.shared.apiEnabled
+        apiPort = AppSettings.shared.apiPort
+        apiToken = AppSettings.shared.apiToken
+    }
+
+    func regenerateToken() {
+        apiToken = AppSettings.shared.regenerateAPIToken()
+    }
+
+    func copyToken() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(apiToken, forType: .string)
     }
 
     func chooseFolder() {

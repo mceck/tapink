@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var coordinator: DrawSessionCoordinator!
     private var statusItemController: StatusItemController!
     private var hotkeyManager: HotkeyManager!
+    private var apiServer: APIServer!
     private var accessibilityGrantPoller: Timer?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -18,10 +19,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         coordinator = DrawSessionCoordinator()
         statusItemController = StatusItemController(coordinator: coordinator)
         hotkeyManager = HotkeyManager(coordinator: coordinator)
+        apiServer = APIServer(coordinator: coordinator)
 
         applyDockPolicy(hidden: AppSettings.shared.hideFromDockAndSwitcher)
         AppSettings.shared.onHideFromDockChanged = { [weak self] hidden in
             self?.applyDockPolicy(hidden: hidden)
+        }
+
+        if AppSettings.shared.apiEnabled {
+            apiServer.start(port: AppSettings.shared.apiPort)
+        }
+        AppSettings.shared.onAPIEnabledChanged = { [weak self] enabled in
+            guard let self else { return }
+            if enabled {
+                self.apiServer.start(port: AppSettings.shared.apiPort)
+            } else {
+                self.apiServer.stop()
+            }
+        }
+        AppSettings.shared.onAPIPortChanged = { [weak self] port in
+            guard let self, AppSettings.shared.apiEnabled else { return }
+            self.apiServer.start(port: port)
         }
 
         requestPermissionsIfNeeded()

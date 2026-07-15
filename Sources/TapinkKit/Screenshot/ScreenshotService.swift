@@ -56,6 +56,27 @@ public final class ScreenshotService {
         return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
 
+    /// Same silent capture as `captureImage`, cropped to `pixelRect` — already in the top-left-
+    /// origin pixel space `CGImage.cropping(to:)` expects. Unlike `captureRegion`'s
+    /// `regionInPoints`, callers here (the external API) already have pixel coordinates, so no
+    /// bottom-left/top-left flip is needed.
+    @MainActor
+    public func captureRegionImage(displayID: ScreenID, pixelRect: CGRect, excludingWindowNumbers: [Int]) async -> NSImage? {
+        guard let cgImage = await captureDisplayImage(displayID: displayID, excludingWindowNumbers: excludingWindowNumbers) else { return nil }
+        guard let cropped = cgImage.cropping(to: pixelRect.integral) else {
+            NSLog("TapInk: failed to crop screenshot to region \(pixelRect)")
+            return nil
+        }
+        return NSImage(cgImage: cropped, size: NSSize(width: cropped.width, height: cropped.height))
+    }
+
+    /// Shared PNG conversion used both for disk-saving and for the external API's screenshot response.
+    public func pngData(from image: NSImage) -> Data? {
+        guard let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
+        return bitmap.representation(using: .png, properties: [:])
+    }
+
     /// Converts a selection rect from AppKit view-local coordinates (origin at the
     /// bottom-left, y increasing upward — matching `CanvasView.bounds`) into the pixel
     /// crop rect `CGImage.cropping(to:)` expects (origin at the top-left, y increasing
@@ -136,9 +157,7 @@ public final class ScreenshotService {
         let url = URL(fileURLWithPath: folderPath)
             .appendingPathComponent("TapInk \(formatter.string(from: Date())).png")
 
-        guard let tiff = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else { return }
-        try? pngData.write(to: url)
+        guard let data = pngData(from: image) else { return }
+        try? data.write(to: url)
     }
 }
